@@ -1,18 +1,11 @@
-/*
-SELECT 
-	YEAR(OrderDate) AS [Year],
-	COUNT(DISTINCT CustomerID) AS "Number of Unique Customers",
-	AVG(SubTotal + TaxAmt),
-	SUM(SubTotal + TaxAmt),
-	SUM(TotalDue),
-	AVG(TaxAmt / SubTotal)
-FROM Sales.SalesOrderHeader
-GROUP BY YEAR(OrderDate)
-ORDER BY "Number of Unique Customers" DESC
-*/
-
-SELECT DISTINCT a.CurrencyRateID, c.[Name] AS "From Currency", d.[Name] AS "To Currency"
+SELECT
+	c.[Name] AS Territory,
+	YEAR(a.OrderDate) AS [Year],
+	ROUND(SUM(a.TotalDue / COALESCE(b.EndOfDayRate, 1)) / 1000000, 2) AS [Total of SubTotal in USD (Millions)]
 FROM Sales.SalesOrderHeader a
-	JOIN Sales.CurrencyRate b ON a.CurrencyRateID = b.CurrencyRateID
-	JOIN Sales.Currency c ON b.FromCurrencyCode = c.CurrencyCode
-	JOIN Sales.Currency d ON b.ToCurrencyCode = d.CurrencyCode
+	LEFT JOIN Sales.CurrencyRate b ON a.CurrencyRateID = b.CurrencyRateID
+	JOIN Sales.SalesTerritory c ON a.TerritoryID = c.TerritoryID
+WHERE a.[Status] NOT IN (4, 6)
+GROUP BY c.[Name], YEAR(a.OrderDate)
+HAVING SUM(a.TotalDue / COALESCE(b.EndOfDayRate, 1)) > 1000000
+ORDER BY [Total of SubTotal in USD (Millions)] DESC
