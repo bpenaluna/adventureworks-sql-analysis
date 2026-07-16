@@ -9,6 +9,12 @@ What the query does:
 - Filters to only show values of total revenue exceeding $1M
 - Sorts by revenue descending
 
+Skills:
+- Joins (LEFT JOIN, INNER JOIN)
+- GROUP BY and Aggregations (SUM)
+- Filtering (WHERE, HAVING)
+- Null Handling (COALESCE)
+
 **Query**
 
 ```sql
