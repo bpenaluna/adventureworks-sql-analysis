@@ -26,7 +26,7 @@ WITH performance AS (
 )
 SELECT Territory, [Year], [Revenue (USD)],
 	CASE
-		WHEN [Last Year Revenue] = 0 THEN 0 ELSE ROUND(100 * [Revenue (USD)] / [Last Year Revenue], 2)
+		WHEN [Last Year Revenue] = 0 THEN 0 ELSE ROUND(100 * ([Revenue (USD)] - [Last Year Revenue]) / [Last Year Revenue], 2)
 	END AS [Percentage Change],
 	Performance
 FROM performance
