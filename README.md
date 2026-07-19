@@ -4,16 +4,7 @@
 
 ### How many years did each territory generate more than $1 million in revenue?
 
-What the query does:
-- Groups by territory and year
-- Converts revenue to USD
-- Filters out cancelled and rejected orders
-- Filters to only show values of total revenue exceeding $1M
-- Groups the resulting table (revenue_over_mil) by territory only, and counts the number of rows for each territory
-- Joins on SalesTerritory table to include territories missing from the revenue_over_mil table (did not generate over $1 million in any given year) 
-- Sorts by count descending and territory ascending
-
-Skills:
+**Skills:**
 - Joins (LEFT JOIN, INNER JOIN)
 - GROUP BY and Aggregations (SUM)
 - Filtering (WHERE, HAVING)
@@ -57,14 +48,14 @@ ORDER BY [Count] DESC, Territory
 | Germany        | 2     |
 | Northeast      | 2     |
 
-Key Takeaways:
+**Key Takeaways:**
 - All of the territories generated a total yearly income of at least $1 million at least twice
 - Australia, Canada, Central, Northwest and Southwest achieved this the most (4 times)
 - Germany and Northeast achieved it the least (2 times)
 
 ### Which territories outperform the yearly average total revenue for all territories? What is the yearly percentage change in revenue for all territories?
 
-Skills:
+**Skills:**
 - Subqueries
 - CTEs
 - Window functions (LAG, PARTION BY)
@@ -153,9 +144,67 @@ ORDER BY Territory DESC, [Year]
 | Australia      | 2024 | 2481580.58    | 95.21             | Below Average |
 | Australia      | 2025 | 1687808.77    | -31.99            | Below Average |
 
-Key takeaways:
+**Key takeaways:**
 - Canada has falled below the yearly average for the last two years despite being above average for the two years before with a big dropoff it yearly revenue from 2024-25 (-61.62%)
 - All territories experienced a fall in revenue from 2024-25 with the biggest being Northeast (-70.44%) and the smallest being Australia (-31.99%)
 - Northwest and Southwest were above average in terms of total yearly revenue for every year between 2022-25
 - Northeast, Germany, France and Australia were below average in terms of total yearly revenue for every year between 2022-25
 - The single biggest yearly percentage change in revenue was in France from 2022-23 (2503.17%)
+
+### What is the distribution of the customers' last orders?
+
+**Skills:**
+- Multiple CTEs
+- Joins
+- Null handling
+- Conditions (CASE)
+
+**Query:**
+
+```sql
+WITH DaysSinceOrdered AS (
+	SELECT
+		c.CustomerID,
+		DATEDIFF(
+			day,
+			MAX(OrderDate),
+			(SELECT MAX(OrderDate) FROM Sales.SalesOrderHeader)
+		) AS DaysSince
+	FROM Sales.Customer c
+		LEFT JOIN Sales.SalesOrderHeader s ON (c.CustomerID = s.CustomerID)
+	GROUP BY c.CustomerID
+),
+Grouped AS (
+	SELECT
+		CustomerID,
+		CASE
+		    WHEN DaysSince IS NULL THEN 'Never Ordered'
+			WHEN DaysSince BETWEEN 0 AND 30 THEN '0 - 30 Days'
+			WHEN DaysSince BETWEEN 31 AND 90 THEN '31 - 90 Days'
+			WHEN DaysSince BETWEEN 91 AND 365 THEN '91 - 365 Days'
+			ELSE '> 365 Days'
+		END AS DaysSinceLastOrder
+	FROM DaysSinceOrdered
+)
+SELECT
+	DaysSinceLastOrder,
+	COUNT(CustomerID) AS NumberOfCustomers,
+	100.0 * COUNT(CustomerID) / (SELECT COUNT(DISTINCT CustomerID) FROM Sales.Customer) AS 'Percentage (%)'
+FROM Grouped
+GROUP BY DaysSinceLastOrder
+ORDER BY NumberOfCustomers DESC
+```
+
+**Result:**
+
+| DaysSinceLastOrder | NumberOfCustomers | Percentage (%)  |
+|--------------------|-------------------|-----------------|
+| 91 - 365 Days      | 12992             | 65.549949545913 |
+| 31 - 90 Days       | 4180              | 21.089808274470 |
+| > 365 Days         | 1016              | 5.126135216952  |
+| 0 - 30 Days        | 931               | 4.697275479313  |
+| Never Ordered      | 701               | 3.536831483350  |
+
+**Key Takeaways:**
+- The majority of customers (65.5%) last ordered between 91 and 365 days.
+- 3.54% of registered customers have never ordered.
